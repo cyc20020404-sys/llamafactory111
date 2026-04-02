@@ -2,6 +2,16 @@
   "emention": {
     "file_name": "emention/train_converted.jsonl"
   },
+  "emention_dpo": {
+    "file_name": "emention_dpo/train.jsonl",
+    "ranking": true,
+    "formatting": "sharegpt",
+    "columns": {
+      "messages": "conversations",
+      "chosen": "chosen",
+      "rejected": "rejected"
+    }
+  },
   "identity": {
     "file_name": "identity.json"
   },

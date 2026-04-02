@@ -1,0 +1,53 @@
+services:
+  # Qdrant 向量数据库
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: llama_rag_qdrant
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC API
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=32
+    restart: unless-stopped
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI 后端服务
+  rag-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llama_rag_backend
+    ports:
+      - "8001:8000"
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - EMBEDDING_MODEL=text2vec-base-chinese
+      - HF_HUB_OFFLINE_MODE=1
+      - TRANSFORMERS_OFFLINE=1
+    volumes:
+      - ./backend:/app
+      - huggingface_cache:/root/.cache/huggingface
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - rag_network
+
+networks:
+  rag_network:
+    driver: bridge
+
+volumes:
+  qdrant_storage:
+  huggingface_cache:
